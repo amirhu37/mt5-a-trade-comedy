@@ -1,4 +1,5 @@
 
+
 import time
 import MetaTrader5 as mt5
 from numpy import array, mean, arange
@@ -8,11 +9,11 @@ from os import system
 from os.path import exists
 
 
-SYMBOL =  input('SYMBOL: ')
-VOLUME =  float(input('Volume(Lotage 0.01 ~ 10): '))
-TIMEFRAME =  int(input('Time Frame (1, 5, 15, 30, 60): '))
+SYMBOL = "BTCUSD" #input('SYMBOL: ')
+VOLUME =  0.02 #float(input('Volume(Lotage 0.01 ~ 10): '))
+TIMEFRAME =  1 #int(input('Time Frame (1, 5, 15, 30, 60): '))
 PERIOD = 10            # int(input('how many candles to candles: ')) #SMA deleted but functions are still exsit
-RR_RATIO = int(input('Risk/Reward Ratio (1 to ?): '))
+RR_RATIO = 2 #int(input('Risk/Reward Ratio (1 to ?): '))
 DEVIATION = 20
 MINUTE = 60
 minutes = TIMEFRAME * MINUTE
@@ -46,7 +47,7 @@ time_perid = {
 
 
 def symbol_info(s: str, rr: int=1):
-
+    "SYMBOLs can Have difrent pips and spreads.\nmaybe I can help you with that.\nBTW rr is Risk/Reward Ratio"
     SYMBOL_DATA = mt5.symbol_info(s)._asdict()
 
     spread = SYMBOL_DATA['spread']
@@ -58,7 +59,7 @@ def symbol_info(s: str, rr: int=1):
         'XAUUSDc':  [spread/100 , point:= 1 , rr],
         'XAUUSDb' : [spread/100 , point:= 1 , rr],
 
-        'ETHUSD':   [spread/100 , point:= 0 , rr],
+        'ETHUSD':   [spread/100 , point:= 1 , rr],
 
         'EURUSD' :  [spread/10_000 , point:= .001 , rr],
         'EURUSDc' : [spread/10_000 , point:= .001 , rr],
@@ -80,7 +81,29 @@ def symbol_info(s: str, rr: int=1):
     
     return syms[s]
 
+
+def sma(symbol: str,TIME_FRAME: int, period: int ) -> str:
+    "I can help you to Find Simple Moving Average, base on 'Open's"
+    bars =  mt5.copy_rates_from_pos(symbol, time_perid[TIME_FRAME], 1, period)
+    temp_list = list()
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))
+        last_close = bars[-1][1]  # SMA base on 4: CLOSE , 1: OPEN
+        bars = array(temp_list)
+        sma = mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
+
+    direction = 'flat'
+    if last_close > sma:
+        direction = 'buy'
+    elif last_close < sma:
+        direction = 'sell'
+    
+    return last_close, sma, direction
+
+
 def updator(date: str, pos: str, pr: float, sl: float, tp: float, comment: str, pattern: str) -> dict:
+    "Journal your Trade Activity is a Big Deal,\nI'm a part of this High Duty"
     journal['date'] = date  # str(datetime.now())[:19]
     journal['position'] = pos  # results[0]
     journal['price'] = f"{pr: .2f}"  # f"{req['price']: .2f}"
@@ -91,7 +114,7 @@ def updator(date: str, pos: str, pr: float, sl: float, tp: float, comment: str, 
     return journal
 
 def trend(symbol: str, tf, sma: int = 20,) -> float:
-
+    "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
     bars = mt5.copy_rates_from_pos(symbol, time_perid[tf], 1, sma)
 
     temp_list = list()
@@ -125,7 +148,7 @@ def trend(symbol: str, tf, sma: int = 20,) -> float:
     return t_line
 
 class PIVOT:
-
+    "Pivot Points can be Important,\nbut a little bit of advice; use it for higher Time Frames\nUse this methos for support/Resistance of Pivot Points; 'resistaces_PP' ,  'supports_PP' ,'result'"
     def __init__(self, SYM: str, TF: int = 240, peride: int = 2 ) -> None:
         self.candles =  mt5.copy_rates_from_pos(SYM, time_perid[TF], 1, peride)
         # self.open_1: float = self.candles   [1][1] # OPEN
@@ -140,14 +163,16 @@ class PIVOT:
         self.PP : float = (self.High_1 + self.low_1 + self.close_1) / 3
 
 
-    def resis_PP(self, ):
+    def resistaces_PP(self, ):
+        "Pivot Points Have 3 Resistance Lines, I will Find it For You\nBUT for exact Numbers Use 'result' Methods"
         r1 : float  = (2 * self.PP) - self.low_1
         r2 : float = self.PP + (self.High_1 - self.low_1)
         r3 : float = self.High_1 + 2*(self.PP - self.low_1)
         
         return round(r1,2), round(r2,2), round(r3,2)
 
-    def sup_PP(self,):
+    def supports_PP(self,):
+        "Pivot Points Have 3 Support Lines, I will Find it For You\nBUT for exact Numbers Use 'result' Methods"
         s1 : float = (2 * self.PP) - self.High_1
         s2 : float = self.PP - (self.High_1 - self.low_1)
         s3 : float = self.low_1 - 2 * (self.High_1 - self.PP)
@@ -155,13 +180,14 @@ class PIVOT:
         return round(s1, 2), round(s2,2), round(s3,2)
 
     def result(self,):
-
+        "Exact Numbers Are Here"
         s1 = self.sup_PP()
         r1 = self.resis_PP()
         
         return s1, r1, round(self.PP, 2)
 
 class Patterns:
+    "I help you to find Some candle Patterns,\nSuch as 'engulfing', 'doji', 'threes' (soldiers/Raves)"
     # OHLC
     def __init__(self, symbol, timeframe, period)-> None:
         # OHLC
@@ -173,6 +199,7 @@ class Patterns:
         self.bars =         mt5.copy_rates_from_pos(symbol, time_perid[TIMEFRAME], 1, period)
 
     def engulfing(self) -> tuple:
+        "I'll help you to find 'engulfing' pattern. Ascendig & Descendig"
         # Candle 1
         self.open_1: float =  self.candles_eng  [1][1]
         self.High_1: float =  self.candles_eng  [1][2]
@@ -197,6 +224,7 @@ class Patterns:
             return 'No Position','No Pattern' , None , None
 
     def doji(self) -> tuple:
+        "I'll help you to find 'doji' pattern. Ascendig & Descendig"
         # # Candle 1
         self.open_1: float =  self.candles_doj  [1][1]
         self.High_1: float =  self.candles_doj  [1][2]
@@ -231,7 +259,8 @@ class Patterns:
         else:
             return 'No Position','No Pattern' , None , None
 
-    def three_consecutive(self) -> tuple:
+    def threes(self) -> tuple:
+        "I'll help you to find 'Three soldires/Ravens' pattern. "
         # candle 0
         self.open_0: float =  self.candles_3   [1][1]
         self.close_0: float = self.candles_3   [1][4]
@@ -266,55 +295,9 @@ class Patterns:
         
         else:
             return 'No Position','No Pattern' , None , None
-
-    def sma(self) -> str:
-        temp_list = list()
-        for i in self.bars:
-            # Converting to tuple and then to array to fix an error.
-            temp_list.append(list(i))
-            last_close = self.bars[-1][1]  # SMA base on 4: CLOSE , 1: OPEN
-            bars = array(temp_list)
-            sma = mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
-
-        direction = 'flat'
-        if last_close > sma:
-            direction = 'buy'
-        elif last_close < sma:
-            direction = 'sell'
-        
-        return direction
-
-    def result(self) -> tuple:
-#```````````````````````````````````    buy parts   ``````````````````````````````````````
-        # if self.sma() == 'buy':
-        if self.engulfing()[0]  == 'buy':
-            # 2: open , 3: low,
-            return 'buy' , self.engulfing()[2], self.engulfing()[3], self.engulfing()[1]
-
-        elif self.doji()[0]  == 'buy':
-            # 2: open , 3: low
-            return 'buy', self.doji()[2], self.doji()[3] , self.doji()[1]
-
-        elif self.three_consecutive()[0]  == 'buy':
-            # 2: open , 3: low
-            return 'pass', self.three_consecutive()[2], self.three_consecutive()[3] , self.three_consecutive()[1]
-        
-#```````````````````````````````````  Sell parts  ````````````````````````````````````````
-        elif self.engulfing()[0]  == 'sell':
-            # 2: open , 3: low
-            return 'sell', self.engulfing()[2], self.engulfing()[3], self.engulfing()[1]
-
-        elif self.doji()[0] ==  'sell':
-           # 2: open , 3: High
-            return 'sell', self.doji()[2], self.doji()[3], self.doji()[1]
-            
-        elif self.three_consecutive()[0] ==  'sell':
-            # 2: open , 3: High
-            return 'pass', self.three_consecutive()[2] , self.three_consecutive()[3], self.three_consecutive()[1]
-        else:
-            return 'Nothin\'', 0, 0 , 'No Positions'
-     
+   
 class SUPPORT_RESISTANCE:
+    "I'm goint to find some Supports/Resistenc for you.\nUse 'result' Methods for Exact Numbers"
     def __init__(self, symbol: str, timeframe, period, n1: int, n2: int, l : int = 60) -> None:
         self.n1 = n1
         self.n2 = n2
@@ -328,11 +311,13 @@ class SUPPORT_RESISTANCE:
         self.bars = array(temp_list)
 
     def support(self, l : int) -> int:
+        "I'm giving you Supports lines, BUt for Find Real Lines use 'reslut' method"
         self.l = l
         # n1 n2 before and after candle l
-        for i in range(self.l - self.n1 + 1, self.l + 1 ):
+        for i in range( (self.l - self.n1 + 1), self.l + 1 ):
             if (self.bars[:, 3][i] > self.bars[:, 3][i-1]): 
                 # Compare 2 Lows  to eachother
+                 
                 return 0
         for i in range(self.l + 1, self.l + self.n2+1):
             # Compare 2 Lows  to eachother:
@@ -341,6 +326,7 @@ class SUPPORT_RESISTANCE:
         return 1
 #OHLC
     def resistance(self, l: int ) -> int: 
+        "It's time to find Resistance lines, BUt for Find Real Lines use 'reslut' method"
         self.l = l
         # n1 n2 before and after candle l
         for i in range(self.l - self.n1 + 1, self.l + 1):
@@ -352,6 +338,7 @@ class SUPPORT_RESISTANCE:
         return 1
 
     def result(self) :
+        "I'm here to show you S/R Lins Values"
         S: list[float] = []
         R: list[float] = []
         for row in range(3, (len(self.bars) - self.n2 ) ):
@@ -363,6 +350,7 @@ class SUPPORT_RESISTANCE:
         return S, R
 
 def market_order(symbol: str, volume: float, order_type: str, **kwargs) -> dict:
+    "I'm responsiable to Open Deals"
     tick = mt5.symbol_info_tick(symbol)
 
     SPREAD, POINT, RATIO = symbol_info(symbol, RR_RATIO)
@@ -416,6 +404,7 @@ def market_order(symbol: str, volume: float, order_type: str, **kwargs) -> dict:
 
 # function to close an order base don ticket id
 def close_order(ticket) -> dict:
+    "I'm responsiable to Close Deals"
     positions = mt5.positions_get()
 
     for pos in positions:
@@ -446,9 +435,9 @@ def close_order(ticket) -> dict:
     return 'Ticket does not exist'
 
 
-if True:
-    system("if exist Journal\ (echo None ) else (mkdir Journal\)")
-    pass
+
+system("if exist Journal\ (echo None ) else (mkdir Journal\)")
+
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~    Main    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -463,11 +452,8 @@ if __name__ == '__main__':
 
     ordr_dict = {'buy': 0, 'sell': 1}
 
-    PP = PIVOT(SYMBOL)
-    
-    sup_PP ,resis_PP, p_point = PP.result()
 
-    
+
     while True:
 
         system('cls')
@@ -476,132 +462,11 @@ if __name__ == '__main__':
 
         print("Symbol: ",SYMBOL, "\n\n")
 
-        # SIGNAL = Signal(SYMBOL, TIMEFRAME, PERIOD)
-
-        # moment = momentom(SYMBOL, TIMEFRAME)
-
-        # results = SIGNAL.result()
-        
-        # SUPPORTS, RESISTANCES = SUPPORT_RESISTANCE(SYMBOL,TIMEFRAME,110 ,3 ,2).result()
-        
-        # all_suports = (SUPPORTS + list(sup_PP))
-
-        # all_suports = [float(v) for v in all_suports]
-        
-        # all_resistance = (RESISTANCES + list(resis_PP))
-        
-        # all_resistance = [float(i) for i in all_resistance]
-
-        # print('pivot point:',p_point )
-        # print('\n')
-        # print('PP Resistances: ', resis_PP)
-        # print('\n')
-        # print('PP Supports: ', sup_PP )
-        # print('\n')
-        # print('Support: ', SUPPORTS)
-        # print('\n')
-        # print( 'Resistances: ' ,RESISTANCES)
-        # print('\n')
-        # print('position: ', results[0] )
-        # print('\n')
-        # print( 'result: ', results[3])
-        # print('\n')
-        # print("slope: ", moment)
-
-        # price_now  : float= (list(mt5.copy_rates_from_pos(SYMBOL, time_perid[TIMEFRAME],0,2) )[-1][4]).item()  
-        #                     ## get price now and turn it from np float to a native float
-        # print('High: ', SIGNAL.__dict__["High_1"])
-        # print('Open: ' ,SIGNAL.__dict__['open_1'])
-        # print( 'low: ', SIGNAL.__dict__['low_1'])
-        # print("price now: ",price_now)  
-
-        # # OHLC.
-        
-        # if results[0] == 'buy' and (5.00 >= abs(moment) >= 1.10):
-
-        #     for i in all_suports:
-                
-        #         if ( results[2] >= i >= results[1] )  :
-        #             if not mt5.positions_total():
-        #                 try:
-        #                     # Open Position
-        #                     position, req = market_order(SYMBOL, VOLUME, results[0])
-        #                     # Regiter Data
-        #                     J = updator(str(datetime.now())[:19], results[0], req['price'], req['sl'], req['tp'], position['comment'], results[3])
-        #                     print(
-        #                         f"{J['comment']}: {results[0]}, by {results[3]}")
-
-        #                     with open(f'Journal\{str(datetime.now())[:10]}.csv', 'a') as j:
-
-        #                         for v in J.values():
-        #                             j.writelines(f"{v},")
-
-        #                         j.writelines("\n")
-
-        #                         print('data registed')
-
-        #                     time.sleep(minutes * 2)
-
-        #                 except:
-        #                     print(f"{results[0]} poition didn\' open. somthin\' wnt wrong")
-        #                     pass
-    
-        #     # if we have a BUY signal, close all short positions
-        #     # for i in range(len(all_suports)):
-        #     #     if price_now == all_suports[i]:
-        #     #         try:
-        #     #             for pos in mt5.positions_get():
-        #     #                 # if pos.type == 1:  # pos.type == 1 represent a sell order
-        #     #                 close_order(pos.ticket)
-        #     #         except:
-        #     #             pass
-        #     #     else:
-        #     #         pass
-        
-        # # OHLC
-        # elif results[0] == "sell" and (5.00 >= abs(moment) >= 1.10) : 
-            
-        #     for i in all_resistance:
-
-        #         if ( results[2] <= i <= results[1] ) :
-        #             if not mt5.positions_total():
-        #                 try:
-        #                     # Open Position
-        #                     position, req = market_order(SYMBOL, VOLUME, results[0])
-        #                     # Regiter Data
-        #                     J = updator(str(datetime.now())[:19], results[0], req['price'], req['sl'], req['tp'], position['comment'], results[3])
-        #                     print(
-        #                         f"{J['comment']}: {results[0]}, by {results[3]}")
-
-        #                     with open(f'Journal\{str(datetime.now())[:10]}.csv', 'a') as j:
-        #                         for v in J.values():
-        #                             j.writelines(f"{v},")
-        #                         j.writelines("\n")
-
-        #                         print('data registed')
-
-        #                     time.sleep(2 * minutes)
-
-        #                 except:
-        #                     print(f"{results[0]} poition didn\' open. somthin\' wnt wrong")
-        #                     pass
-                        
-        #     # for i in range(len(all_resistance)) :
-        #     #     if price_now == all_suports[i] :
-        #     #             try:
-        #     #                 for pos in mt5.positions_get():
-        #     #                 # if pos.type == 1:  # pos.type == 1 represent a sell order
-        #     #                     close_order(pos.ticket)   
-        #     #             except:
-        #     #                 pass
-                        
-        #     #             else:
-        #     #                 pass
-
+      
         time.sleep(1)
 
         system('cls')
 
-        # break
+        break
         
 ######### END ############
