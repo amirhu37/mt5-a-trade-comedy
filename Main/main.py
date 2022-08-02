@@ -1,3 +1,13 @@
+"""
+helo, Dear User..
+I'm 'Trade Comedy' , I was Born as Money making bot, but now thigs have changed. 
+todat I am a Colection of helping function and classes that can help 'OTHERS' to make a Money Making bot
+here ,inside me, there are a candle-pattern class witch can find engulfing, doji and three's. 
+I can help you find Supports and Resistance lines, Pivot Points, trend line.
+I'm still a Kid, if you You want to help to grow see me at 'https://github.com/amirhu37/mt5-a-trade-comedy'
+
+"""
+
 from MetaTrader5 import TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30, TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1, TIMEFRAME_W1, symbol_info, copy_rates_from_pos, symbol_info_tick, order_send, TRADE_ACTION_DEAL, ORDER_TIME_GTC, ORDER_FILLING_IOC, positions_get
 
 from numpy import array, mean, arange
