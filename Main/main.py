@@ -1,5 +1,3 @@
-
-
 import time
 import MetaTrader5 as mt5
 from numpy import array, mean, arange
@@ -113,38 +111,37 @@ def updator(date: str, pos: str, pr: float, sl: float, tp: float, comment: str, 
     journal['pattern-type'] = pattern  # f"{results[3]}"
     return journal
 
-def trend(symbol: str, tf, sma: int = 20,) -> float:
+def trend(symbol: str, tf, sma: int = 20) -> float:
     "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
+
     bars = mt5.copy_rates_from_pos(symbol, time_perid[tf], 1, sma)
+    temp_list = [i for i in bars]  
+    closes = [temp_list[i][4] for i in range(len(temp_list)) ]
+    opens = [temp_list[i][1] for i in range(len(temp_list)) ]
 
-    temp_list = list()
-
-    xs = list()
-
-    for i in bars:
-        # Converting to tuple and then to array to fix an error.
-        temp_list.append(list(i))
-        last_close = bars[-1][4]  # SMA base on 4: CLOSE , 1: OPEN
-        last_open = bars[-1][1]
-        bars = array(temp_list)
-        sma = mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
-        xs.append(round(((last_close+last_open)/2), 2))
-
-    xs = array(xs)
-
-    end = (xs.shape[0])+1
+    closes = array(closes)
+    opens = array(opens)
+    
+    end = (closes.shape[0])+1
 
     q = arange(1, end)
 
     q = q.reshape(-1, 1)
 
     reg = ln.LinearRegression()
-    reg.fit(q, xs)
+    
+    ln_closse = reg.fit(q, closes)
+    ln_opens = ln_closse = reg.fit(q, opens)
+    
+    if round(ln_closse.coef_[0], 2 ) < 0:
+        return round(ln_closse.coef_[0], 2), round(ln_closse.intercept_, 2)
+    elif round(ln_closse.coef_[0], 2 ) > 0:
+        return round(ln_opens.coef_[0], 2), round(ln_opens.intercept_, 2)
 
-    slope_, STD = round(reg.coef_[0], 2), round(reg.intercept_, 2)
 
-    x = [i for i in range(sma)]
-    t_line = [ round(((i * slope_) + STD), 2 )  for i in x]
+def trend_line(s: float, st: float, pr: int = 20):
+    x = [i for i in range(pr)]
+    t_line = [ round(((i * s) + st), 2) for i in x]
     return t_line
 
 class PIVOT:
@@ -451,22 +448,5 @@ if __name__ == '__main__':
             j.writelines("\n")      
 
     ordr_dict = {'buy': 0, 'sell': 1}
-
-
-
-    while True:
-
-        system('cls')
-
-        print("\n")
-
-        print("Symbol: ",SYMBOL, "\n\n")
-
-      
-        time.sleep(1)
-
-        system('cls')
-
-        break
         
 ######### END ############
