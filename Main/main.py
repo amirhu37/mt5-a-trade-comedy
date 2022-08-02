@@ -268,7 +268,8 @@ class Patterns:
             return 'No Position', 'No Pattern', None, None
 
     def threes(self) -> tuple:
-        "I'll help you to find 'Three soldires/Ravens' pattern. "
+        """I'll help you to find 'Three soldires/Ravens' pattern.
+        alittle advise: use me with help of my cusin 'trend', but how? find it yourself :) """
         # candle 0
         self.open_0: float = self.candles_3[1][1]
         self.close_0: float = self.candles_3[1][4]
