@@ -32,6 +32,13 @@ time_perid = {
 }
 
 
+def symbol_data(sym: str, tf: int, ma: int, ohlc: str):
+    bars = copy_rates_from_pos(sym, time_perid[tf], 1, ma)
+    OHLC = {'o': 1 , 'h': 2, 'l': 3, 'c': 4}
+    temp_list = [i for i in bars] 
+    data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
+    return data
+
 def symbol_info(s: str, rr: int = 1):
     "SYMBOLs can Have difrent pips and spreads.\nmaybe I can help you with that.\nBTW rr is Risk/Reward Ratio"
     SYMBOL_DATA = symbol_info(s)._asdict()
@@ -116,10 +123,14 @@ def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, 
     return journal
 
 class Trend_reg:
-    def trend_reg(symbol: str, tf, sma: int = 20) -> float:
+    def __init__(self,  symbol: str, tf: int, ma: int = 20) -> None:
+        self.symbol = symbol
+        self.tf = tf
+        self.ma = ma
+    def trend_reg(self,) -> float:
         "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
 
-        bars = copy_rates_from_pos(symbol, time_perid[tf], 1, sma)
+        bars = copy_rates_from_pos(self.symbol, time_perid[self.tf], 1, self.ma)
         temp_list = [i for i in bars]
         closes = [temp_list[i][4] for i in range(len(temp_list))]
         opens = [temp_list[i][1] for i in range(len(temp_list))]
@@ -135,25 +146,30 @@ class Trend_reg:
 
         reg = ln.LinearRegression()
 
-        ln_closse = reg.fit(q, closes)
-        ln_opens = ln_closse = reg.fit(q, opens)
+        self.ln_closse = reg.fit(q, closes)
+        self.ln_opens = reg.fit(q, opens)
 
-        if round(ln_closse.coef_[0], 2) < 0:
-            return round(ln_closse.coef_[0], 2), round(ln_closse.intercept_, 2)
-        elif round(ln_closse.coef_[0], 2) > 0:
-            return round(ln_opens.coef_[0], 2), round(ln_opens.intercept_, 2)
+        if round(self.ln_closse.coef_[0], 2) < 0:
+            return round(self.ln_closse.coef_[0], 2), round(self.ln_closse.intercept_, 2)
+        elif round(self.ln_closse.coef_[0], 2) > 0:
+            return round(self.ln_opens.coef_[0], 2), round(self.ln_opens.intercept_, 2)
 
 
-    def trend_line(s: float, st: float, pr: int = 20):
-        x = [i for i in range(pr)]
+    def trend_line(self,):
+        x = [i for i in range(self.ma)]
+        s, st = self.trend_reg()
         t_line = [round(((i * s) + st), 2) for i in x]
         return t_line
 
 
 
 class Trend_np:
-    def trend_np(self, symbol: str, tf: int, ma: int = 20):
-        bars = copy_rates_from_pos(symbol, time_perid[tf], 0, ma)
+    def __init__(self,  symbol: str, tf: int, ma: int = 20) -> None:
+        self.symbol = symbol
+        self.tf = tf
+        self.ma = ma
+    def trend_np(self,):
+        bars = copy_rates_from_pos(self.symbol, time_perid[self.tf], 0, self.ma)
 
         temp_list = [i for i in bars]
 
@@ -163,12 +179,12 @@ class Trend_np:
 
         closes = array(closes)
         z = polyfit (xs, closes, 1)
-        p = poly1d (z)
-        return round(p.coef[0] , 2), round(p.coef[1], 2)
+        self.p = poly1d (z)
+        return round(self.p.coef[0] , 2), round(self.p.coef[1], 2)
 
-    def trend_line(self, s: float, st: float, pr: int = 20):
-        s, st = self.trend_np
-        x = [i for i in range(pr)]
+    def trend_line(self, ):
+        s, st = self.trend_np()
+        x = [i for i in range(self.ma)]
         t_line = [round(((i * s) + st), 2) for i in x]
         return t_line
 
