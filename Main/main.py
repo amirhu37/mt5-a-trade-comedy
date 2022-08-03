@@ -8,14 +8,15 @@ I'm still a Kid, if you You want to help to grow see me at 'https://github.com/a
 
 """
 
-from MetaTrader5 import initialize, TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30, TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1, TIMEFRAME_W1, symbol_info, copy_rates_from_pos, symbol_info_tick, order_send, TRADE_ACTION_DEAL, ORDER_TIME_GTC, ORDER_FILLING_IOC, positions_get
-
-from numpy import array, mean, arange
+from MetaTrader5 import initialize,TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30, TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1, TIMEFRAME_W1, symbol_info, copy_rates_from_pos, symbol_info_tick, order_send, TRADE_ACTION_DEAL, ORDER_TIME_GTC, ORDER_FILLING_IOC, positions_get
+from numpy import array, mean, arange, polyfit, poly1d 
 from sklearn import linear_model as ln
 from datetime import datetime
 from os import system
 from os.path import exists
 
+
+# print(__doc__)
 initialize()
 ordr_dict = {'buy': 0, 'sell': 1}
 
@@ -114,39 +115,63 @@ def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, 
                }
     return journal
 
+class Trend_reg:
+    def trend_reg(symbol: str, tf, sma: int = 20) -> float:
+        "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
 
-def trend(symbol: str, tf, sma: int = 20) -> float:
-    "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
+        bars = copy_rates_from_pos(symbol, time_perid[tf], 1, sma)
+        temp_list = [i for i in bars]
+        closes = [temp_list[i][4] for i in range(len(temp_list))]
+        opens = [temp_list[i][1] for i in range(len(temp_list))]
 
-    bars = copy_rates_from_pos(symbol, time_perid[tf], 1, sma)
-    temp_list = [i for i in bars]
-    closes = [temp_list[i][4] for i in range(len(temp_list))]
-    opens = [temp_list[i][1] for i in range(len(temp_list))]
+        closes = array(closes)
+        opens = array(opens)
 
-    closes = array(closes)
-    opens = array(opens)
+        end = (closes.shape[0])+1
 
-    end = (closes.shape[0])+1
+        q = arange(1, end)
 
-    q = arange(1, end)
+        q = q.reshape(-1, 1)
 
-    q = q.reshape(-1, 1)
+        reg = ln.LinearRegression()
 
-    reg = ln.LinearRegression()
+        ln_closse = reg.fit(q, closes)
+        ln_opens = ln_closse = reg.fit(q, opens)
 
-    ln_closse = reg.fit(q, closes)
-    ln_opens = ln_closse = reg.fit(q, opens)
-
-    if round(ln_closse.coef_[0], 2) < 0:
-        return round(ln_closse.coef_[0], 2), round(ln_closse.intercept_, 2)
-    elif round(ln_closse.coef_[0], 2) > 0:
-        return round(ln_opens.coef_[0], 2), round(ln_opens.intercept_, 2)
+        if round(ln_closse.coef_[0], 2) < 0:
+            return round(ln_closse.coef_[0], 2), round(ln_closse.intercept_, 2)
+        elif round(ln_closse.coef_[0], 2) > 0:
+            return round(ln_opens.coef_[0], 2), round(ln_opens.intercept_, 2)
 
 
-def trend_line(s: float, st: float, pr: int = 20):
-    x = [i for i in range(pr)]
-    t_line = [round(((i * s) + st), 2) for i in x]
-    return t_line
+    def trend_line(s: float, st: float, pr: int = 20):
+        x = [i for i in range(pr)]
+        t_line = [round(((i * s) + st), 2) for i in x]
+        return t_line
+
+
+
+class Trend_np:
+    def trend_np(self, symbol: str, tf: int, ma: int = 20):
+        bars = copy_rates_from_pos(symbol, time_perid[tf], 0, ma)
+
+        temp_list = [i for i in bars]
+
+        closes = [temp_list[i][1] for i in range(len(temp_list)) ]
+
+        xs = [i for i in range(len(closes))]
+
+        closes = array(closes)
+        z = polyfit (xs, closes, 1)
+        p = poly1d (z)
+        return round(p.coef[0] , 2), round(p.coef[1], 2)
+
+    def trend_line(self, s: float, st: float, pr: int = 20):
+        s, st = self.trend_np
+        x = [i for i in range(pr)]
+        t_line = [round(((i * s) + st), 2) for i in x]
+        return t_line
+
 
 
 class PIVOT:
