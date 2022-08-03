@@ -8,7 +8,7 @@ I'm still a Kid, if you You want to help to grow see me at 'https://github.com/a
 
 """
 
-from MetaTrader5 import TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30, TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1, TIMEFRAME_W1, symbol_info, copy_rates_from_pos, symbol_info_tick, order_send, TRADE_ACTION_DEAL, ORDER_TIME_GTC, ORDER_FILLING_IOC, positions_get
+from MetaTrader5 import initialize, TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30, TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1, TIMEFRAME_W1, symbol_info, copy_rates_from_pos, symbol_info_tick, order_send, TRADE_ACTION_DEAL, ORDER_TIME_GTC, ORDER_FILLING_IOC, positions_get
 
 from numpy import array, mean, arange
 from sklearn import linear_model as ln
@@ -16,7 +16,7 @@ from datetime import datetime
 from os import system
 from os.path import exists
 
-
+initialize()
 ordr_dict = {'buy': 0, 'sell': 1}
 
 time_perid = {
