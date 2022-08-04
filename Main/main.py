@@ -32,7 +32,7 @@ time_perid = {
 }
 
 
-def symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
+def Symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
     o = 1
     if Open : o = 0
     bars = copy_rates_from_pos(sym, time_perid[tf], o, ma)
@@ -55,7 +55,7 @@ def Symbol_info(s: str, rr: int = 1):
         'XAUUSDc':  [spread/100, point := 1, rr],
         'XAUUSDb': [spread/100, point := 1, rr],
 
-        'ETHUSD':   [spread/100, point := 1, rr],
+        'ETHUSD':   [spread/10, point := 1, rr],
 
         'EURUSD':  [spread/10_000, point := .001, rr],
         'EURUSDc': [spread/10_000, point := .001, rr],
@@ -406,7 +406,7 @@ class SUPPORT_RESISTANCE:
         return S, R
 
 
-def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
+def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
     "I'm responsiable to Open Deals"
     tick = symbol_info_tick(symbol)
 
@@ -418,6 +418,7 @@ def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPR
     sl_rull = 0.0
     tp_rull = 0.0
 
+    # BUY
     if order_type == 'buy':
 
         sl_rull = price_dict['buy'] - SPREAD - POINT
@@ -428,8 +429,9 @@ def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPR
         print('tp rul: ', tp_rull)
         print('pr - tp ', f"{tp_rull - price_dict['buy'] : .2f}")
         print('sl - tp ', f"{price_dict['buy'] - sl_rull : .2f}")
-
-    elif order_type == 'sell':  # SELL
+    
+    # SELL
+    elif order_type == 'sell':  
 
         sl_rull = price_dict['sell'] + SPREAD + POINT
         tp_rull = price_dict['sell'] - RATIO*POINT - SPREAD
@@ -439,6 +441,7 @@ def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPR
         print('tp rul: ', tp_rull)
         print('pr - tp ', price_dict['sell'] - tp_rull)
         print('sl - tp ', price_dict['sell'] - sl_rull)
+        
     request = {
         "action": TRADE_ACTION_DEAL,
         "symbol": symbol,
@@ -460,7 +463,7 @@ def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPR
 
 
 # function to close an order base don ticket id
-def close_order(ticket, deviation: int) -> dict:
+def close_order(*,ticket, deviation: int) -> dict:
     "I'm responsiable to Close Deals"
     positions = positions_get()
 
@@ -494,5 +497,3 @@ def close_order(ticket, deviation: int) -> dict:
 
 
 ######### END ############
-
-print(Symbol_info('BTCUSD', 1))
