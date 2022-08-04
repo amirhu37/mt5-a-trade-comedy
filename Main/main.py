@@ -34,7 +34,6 @@ time_perid = {
 
 def symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
     o = 1
-    
     if Open : o = 0
     bars = copy_rates_from_pos(sym, time_perid[tf], o, ma)
     OHLC = {'o': 1 , 'h': 2, 'l': 3, 'c': 4}
@@ -42,8 +41,9 @@ def symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
     data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
     return data
 
-def symbol_info(s: str, rr: int = 1):
-    "SYMBOLs can Have difrent pips and spreads.\nmaybe I can help you with that.\nBTW rr is Risk/Reward Ratio"
+def Symbol_info(s: str, rr: int = 1):
+    """SYMBOLs can Have difrent pips and spreads.
+    maybe I can help you with that.\nBTW rr is Risk/Reward Ratio"""
     DATA: dict = symbol_info(s)._asdict()
 
     spread = DATA['spread']
@@ -406,11 +406,11 @@ class SUPPORT_RESISTANCE:
         return S, R
 
 
-def market_order(symbol: str, volume: float, order_type: str, deviation: int, rr_Ratio: int) -> dict:
+def market_order(symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
     "I'm responsiable to Open Deals"
     tick = symbol_info_tick(symbol)
 
-    SPREAD, POINT, RATIO = symbol_info(symbol, rr_Ratio)
+    #  = spread, point, rr_Ratio
     print('spread:', SPREAD)
     order_dict = {'buy': 0, 'sell': 1}
     price_dict = {'buy': tick.ask, 'sell': tick.bid}
@@ -494,3 +494,5 @@ def close_order(ticket, deviation: int) -> dict:
 
 
 ######### END ############
+
+print(Symbol_info('BTCUSD', 1))
