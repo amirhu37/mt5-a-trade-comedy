@@ -32,8 +32,11 @@ time_perid = {
 }
 
 
-def symbol_data(sym: str, tf: int, ma: int, ohlc: str):
-    bars = copy_rates_from_pos(sym, time_perid[tf], 1, ma)
+def symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
+    o = 1
+    
+    if Open : o = 0
+    bars = copy_rates_from_pos(sym, time_perid[tf], o, ma)
     OHLC = {'o': 1 , 'h': 2, 'l': 3, 'c': 4}
     temp_list = [i for i in bars] 
     data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
@@ -41,9 +44,9 @@ def symbol_data(sym: str, tf: int, ma: int, ohlc: str):
 
 def symbol_info(s: str, rr: int = 1):
     "SYMBOLs can Have difrent pips and spreads.\nmaybe I can help you with that.\nBTW rr is Risk/Reward Ratio"
-    SYMBOL_DATA = symbol_info(s)._asdict()
+    DATA: dict = symbol_info(s)._asdict()
 
-    spread = SYMBOL_DATA['spread']
+    spread = DATA['spread']
 
     syms = {
         'BTCUSD': [spread/100, point := 100, rr],
