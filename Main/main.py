@@ -162,6 +162,7 @@ class Trend_reg:
         x = [i for i in range(self.ma)]
         s, st = self.trend_reg()
         t_line = [round(((i * s) + st), 2) for i in x]
+        t_line = [i / 1.0025 for i in t_line]
         return t_line
 
 
