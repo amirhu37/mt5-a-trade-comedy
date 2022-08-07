@@ -36,9 +36,13 @@ def Symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open: bool = False):
     o = 1
     if Open : o = 0
     bars = copy_rates_from_pos(sym, time_perid[tf], o, ma)
-    OHLC = {'o': 1 , 'h': 2, 'l': 3, 'c': 4}
+    OHLC = {'t': 0 , 'o': 1 , 'h': 2, 'l': 3, 'c': 4}
     temp_list = [i for i in bars] 
-    data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
+    if ohlc == 'all':
+         
+        data = [temp_list[i] for i in range(len(temp_list)) ]
+    elif ohlc in OHLC:
+        data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
     return data
 
 def Symbol_info(s: str, rr: int = 1):
@@ -126,7 +130,7 @@ def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, 
     return journal
 
 class Trend_reg:
-    def __init__(self,  symbol: str, tf: int, ma: int = 20) -> None:
+    def __init__(self,  symbol: str, tf: int, ma: int = 30) -> None:
         self.symbol = symbol
         self.tf = tf
         self.ma = ma
@@ -158,12 +162,13 @@ class Trend_reg:
             return round(self.ln_opens.coef_[0], 2), round(self.ln_opens.intercept_, 2)
 
 
-    def trend_line(self,):
-        x = [i for i in range(self.ma)]
+    def trend_line(self, lentgh: int ):
+        x = [i for i in range(lentgh)]
         s, st = self.trend_reg()
         t_line = [round(((i * s) + st), 2) for i in x]
         if s > 0:
-            t_line = [round((i / 1.0025), 2) for i in t_line]
+            t_line = [round((i / 1.0025) , 2) for i in t_line]
+            # 1.0025
         elif s < 0 : 
             t_line = [round((i * 1.0025), 2) for i in t_line]
         return t_line
