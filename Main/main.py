@@ -139,13 +139,15 @@ class Trend_reg:
 
         bars = copy_rates_from_pos(self.symbol, time_perid[self.tf], 1, self.ma)
         temp_list = [i for i in bars]
-        closes = [temp_list[i][4] for i in range(len(temp_list))]
-        opens = [temp_list[i][1] for i in range(len(temp_list))]
+        highs = [temp_list[i][2] for i in range(len(temp_list))]
+        lows = [temp_list[i][3] for i in range(len(temp_list))]
 
-        closes = array(closes)
-        opens = array(opens)
+        self.high_1 : float = max(highs)
+        self.low_1: float = lows[0]
+        highs = array(highs)
+        lows = array(lows)
 
-        end = (closes.shape[0])+1
+        end = (highs.shape[0])+1
 
         q = arange(1, end)
 
@@ -153,25 +155,27 @@ class Trend_reg:
 
         reg = ln.LinearRegression()
 
-        self.ln_closse = reg.fit(q, closes)
-        self.ln_opens = reg.fit(q, opens)
+        self.ln_closse = reg.fit(q, highs)
+        self.ln_lows = reg.fit(q, lows)
 
         if round(self.ln_closse.coef_[0], 2) < 0:
             return round(self.ln_closse.coef_[0], 2), round(self.ln_closse.intercept_, 2)
         elif round(self.ln_closse.coef_[0], 2) > 0:
-            return round(self.ln_opens.coef_[0], 2), round(self.ln_opens.intercept_, 2)
+            return round(self.ln_lows.coef_[0], 2), round(self.ln_lows.intercept_, 2)
 
 
     def trend_line(self, lentgh: int ):
         x = [i for i in range(lentgh)]
         s, st = self.trend_reg()
-        t_line = [round(((i * s) + st), 2) for i in x]
+        line = [round(((i * s) + st), 2) for i in x]
         if s > 0:
-            t_line = [round((i / 1.0025) , 2) for i in t_line]
+            t_line = [round((i / 1.0005) , 2) for i in line]
+            r_line = [round(( i + (self.high_1- self.low_1) ), 4) for i in t_line]
             # 1.0025
         elif s < 0 : 
-            t_line = [round((i * 1.0025), 2) for i in t_line]
-        return t_line
+            t_line = [round((i * 1.0005), 2) for i in line]
+            r_line = [round(( i -  (self.high_1- self.low_1) ), 4) for i in t_line]
+        return t_line, r_line
 
 
 
@@ -185,12 +189,12 @@ class Trend_np:
 
         temp_list = [i for i in bars]
 
-        closes = [temp_list[i][1] for i in range(len(temp_list)) ]
+        highs = [temp_list[i][1] for i in range(len(temp_list)) ]
 
-        xs = [i for i in range(len(closes))]
+        xs = [i for i in range(len(highs))]
 
-        closes = array(closes)
-        z = polyfit (xs, closes, 1)
+        highs = array(highs)
+        z = polyfit (xs, highs, 1)
         self.p = poly1d (z)
         return round(self.p.coef[0] , 2), round(self.p.coef[1], 2)
 
