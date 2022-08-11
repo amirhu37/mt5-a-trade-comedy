@@ -8,7 +8,6 @@ I'm still a Kid, if you You want to help to grow see me at 'https://github.com/a
 
 """
 
-from ast import Try
 import MetaTrader5 as mt5 
 import numpy as np
 from sklearn import linear_model as ln
@@ -83,16 +82,20 @@ def Symbol_info(s: str, rr: int = 1):
     return syms[s]
 
 
-def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, method: str ) -> str:
+def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, method: str ) -> list:
     """
-    I can help you to Find Simple Moving Average, base on
-    -----
+    I can help you to Find Simple Moving Average, base on this methods:
+    ----
+    
     method: 'Open' ,'high', 'low', 'close'
+    ----
+    
+    time_Frame: 1,5,15,30,60
     """
     method_dict = {"open": 1, 'high': 2, "low":3, "close": 4 }
     bars = mt5.copy_rates_from_pos(symbol, time_perid[TIME_FRAME], 1, bar_period)
     temp_list = list()
-    movings = list()
+    movings_avg = list()
 
     for i in bars:
         # Converting to tuple and then to array to fix an error.
@@ -101,13 +104,13 @@ def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, 
         bars = np.array(temp_list)
         sma =  np.mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
     
-    for i in range(0,len(temp_list), 10):
+    for i in range(0,len(temp_list), period):
         lasts = temp_list[i:i+10][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
         # print('lasts: ',lasts[:][1])
         ma =  np.mean(lasts[:][1])  # 4: CLOSE , 1: OPEN Columns
-        movings.append(ma)
+        movings_avg.append(ma)
     
-    return movings #last_close, sma  #, direction
+    return movings_avg
 
 
 def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, price: float, sl: float, tp: float, comment: str, pattern: str) -> dict:
@@ -408,22 +411,57 @@ class SUPPORT_RESISTANCE:
 
 
 def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,span_b : int = 52 ):
-    conves_high : list[float] = moving_average(symbol, time_frame, bar_period, conversion, 'high')
-    conves_low : list[float] = moving_average(symbol, time_frame, bar_period, conversion, 'low')
     
-    base_high : list[float] = moving_average(symbol, time_frame, bar_period, base, 'high')
-    base_low  : list[float] = moving_average(symbol, time_frame, bar_period, base, 'low')
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
 
-    conves_line = [((i + j)/2) for i,j in list(zip(conves_high, conves_low)) ]
-    base_line = [((i + j)/2) for i,j in list(zip(base_high, base_low)) ]
+    temp_list = list()
+    higes_high_9 = list()
+    lowest_low_9 = list()
+    higes_high_26 = list()
+    lowest_low_26 = list()
+    higes_high_52 = list()
+    lowest_low_52 = list()
 
-    span_b_high    : list[float] = moving_average(symbol, time_frame, bar_period, span_b, 'high')
-    span_b_low    : list[float] = moving_average(symbol, time_frame, bar_period,  span_b , 'low')
+    b0 = [None for _ in range(base)]
+    c0 = [None for _ in range(conversion)]
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))
 
-    span_A = [  ((i+j)/2) for i,j in list(zip(conves_line, base_line  ))]
-    span_B = [  ((i+j)/2) for i,j in list(zip(span_b_high, span_b_low )) ]
+    temp_list = np.array(temp_list)
 
-    return conves_line, base_line, span_A, span_B
+
+    for i in range(0, len(temp_list)+1, conversion):
+        hh_9 = max( temp_list[i:i+conversion, 2]  )
+        ll_9 = min( temp_list[i:i+conversion, 3]  )
+        higes_high_9.append(hh_9)
+        lowest_low_9.append(ll_9)
+
+    for i in range(0, len(temp_list), base):
+        hh_26 = max( temp_list[i:i + base] [2] )
+        ll_26 = min( temp_list[i:i + base] [3] )
+        higes_high_26.append(hh_26)
+        lowest_low_26.append(ll_26)
+
+    for i in range(0, len(temp_list), span_b):
+        hh_52 = max( temp_list[i:i + span_b, 2] )
+        ll_52 = min( temp_list[i:i + span_b, 3] )
+        higes_high_52.append(hh_52)
+        lowest_low_52.append(ll_52)
+
+    teken_sen = convs_line = [  ((i+j)/2) for i,j in list(zip(higes_high_9, lowest_low_9)) ]
+    
+    kijin_sen = base_line = [   ((i+j)/2) for i,j in list(zip(higes_high_26, lowest_low_26)) ]
+
+    senko_A = span_A =    [   ((i+j)/2) for i,j in list(zip(convs_line, base_line)) ]
+
+    senko_B = span_B =    [   ((i+j)/2) for i,j in list(zip(higes_high_52, lowest_low_52)) ]
+    convs_line = c0 + convs_line
+    span_A = b0 + span_A
+    span_B = b0 + span_B 
+
+    return convs_line, base_line, span_A, span_B
+    
 
 def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
     "I'm responsiable to Open Deals"
