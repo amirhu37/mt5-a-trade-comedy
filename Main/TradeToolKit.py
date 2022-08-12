@@ -7,7 +7,7 @@ I can help you find Supports and Resistance lines, Pivot Points, trend line.
 I'm still a Kid, if you You want to help to grow see me at 'https://github.com/amirhu37/mt5-a-trade-comedy'
 
 """
-
+import pandas as pd
 import MetaTrader5 as mt5 
 import numpy as np
 from sklearn import linear_model as ln
@@ -410,57 +410,82 @@ class SUPPORT_RESISTANCE:
         return S, R
 
 
-def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,span_b : int = 52 ):
+def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
     
     bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
 
-    temp_list = list()
-    higes_high_9 = list()
-    lowest_low_9 = list()
-    higes_high_26 = list()
-    lowest_low_26 = list()
-    higes_high_52 = list()
-    lowest_low_52 = list()
+    temp_list =  []
+    
+    kijin_sen = base_line = []
+    teken_sen = convs_line= []
+    senko_A = span_A = []
+    senko_B = span_B = []
 
-    b0 = [None for _ in range(base)]
-    c0 = [None for _ in range(conversion)]
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
 
-    temp_list = np.array(temp_list)
-
-
-    for i in range(0, len(temp_list)+1, conversion):
-        hh_9 = max( temp_list[i:i+conversion, 2]  )
-        ll_9 = min( temp_list[i:i+conversion, 3]  )
-        higes_high_9.append(hh_9)
-        lowest_low_9.append(ll_9)
-
-    for i in range(0, len(temp_list), base):
-        hh_26 = max( temp_list[i:i + base] [2] )
-        ll_26 = min( temp_list[i:i + base] [3] )
-        higes_high_26.append(hh_26)
-        lowest_low_26.append(ll_26)
-
-    for i in range(0, len(temp_list), span_b):
-        hh_52 = max( temp_list[i:i + span_b, 2] )
-        ll_52 = min( temp_list[i:i + span_b, 3] )
-        higes_high_52.append(hh_52)
-        lowest_low_52.append(ll_52)
-
-    teken_sen = convs_line = [  ((i+j)/2) for i,j in list(zip(higes_high_9, lowest_low_9)) ]
     
-    kijin_sen = base_line = [   ((i+j)/2) for i,j in list(zip(higes_high_26, lowest_low_26)) ]
+    temp_list = np.array(temp_list)
+    #OHLC
+    n = None
+    high_period_9 = [max( temp_list[i:i+conversion, 2] ) for i in range(0, len(temp_list),conversion) ]
+    low_period_9 = [min( temp_list[i:i+conversion, 3])  for i in range(0, len(temp_list),conversion) ]
+    for _ in range(len(high_period_9)):
+        high_period_9.insert(0, n)
 
-    senko_A = span_A =    [   ((i+j)/2) for i,j in list(zip(convs_line, base_line)) ]
+    for _ in range(len(low_period_9)):
+        low_period_9.insert(0, n)
+         
+    high_period_26 = [max( temp_list[i:i+base , 2] ) for i in range(0, len(temp_list),base) ]
+    low_period_26 = [min( temp_list[i:i+base  , 3])  for i in range(0, len(temp_list),base) ]
+    
+    for _ in range(len(high_period_26)):
+        high_period_26.insert(0, n)
+    for _ in range(len(low_period_26)):
+        low_period_26.insert(0, n)
 
-    senko_B = span_B =    [   ((i+j)/2) for i,j in list(zip(higes_high_52, lowest_low_52)) ]
-    convs_line = c0 + convs_line
-    span_A = b0 + span_A
-    span_B = b0 + span_B 
+    high_period_52 = [max( temp_list[i:i+b , 2] ) for i in range(0, len(temp_list),b) ]
+    low_period_52 = [min( temp_list[i:i+b  , 3])  for i in range(0, len(temp_list),b) ]
+
+    for _ in range(len(high_period_52)):
+        high_period_52.insert(0, n)
+    for _ in range(len(low_period_52)):
+        low_period_52.insert(0, n)
+
+    for i,j in list(zip(high_period_9, low_period_9)):
+        try:
+
+            convs_line.append(((i+j)/2))
+        except TypeError:
+            pass
+
+    for i,j in list(zip(high_period_26, low_period_26)):
+        try:
+
+            base_line.append(((i+j)/2))
+        except TypeError:
+            pass
+
+    for i,j in list(zip(convs_line, base_line)):
+        try:
+
+            span_A.append(((i+j)/2))
+        except TypeError:
+            pass
+
+    for i,j in list(zip(high_period_52, low_period_52)):
+        try:
+
+            span_B.append(((i+j)/2))
+        except TypeError:
+            pass
+
+    
+
 
     return convs_line, base_line, span_A, span_B
+
     
 
 def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
