@@ -21,14 +21,14 @@ mt5.initialize()
 ordr_dict = {'buy': 0, 'sell': 1}
 
 time_perid = {
-    1:      mt5.TIMEFRAME_M1,
-    5:      mt5.TIMEFRAME_M5,
-    15:     mt5.TIMEFRAME_M15,
-    30:     mt5.TIMEFRAME_M30,
-    60:     mt5.TIMEFRAME_H1,
-    240:    mt5.TIMEFRAME_H4,
-    360:    mt5.TIMEFRAME_D1,
-    10080:  mt5.TIMEFRAME_W1
+    "1m" :      mt5.TIMEFRAME_M1,
+    '5m' :      mt5.TIMEFRAME_M5,
+    '15m':     mt5.TIMEFRAME_M15,
+    '30m':     mt5.TIMEFRAME_M30,
+    '1h' :     mt5.TIMEFRAME_H1,
+    '4h' :    mt5.TIMEFRAME_H4,
+    '1d' :    mt5.TIMEFRAME_D1,
+    '1w' :  mt5.TIMEFRAME_W1
 }
 
 
@@ -105,7 +105,7 @@ def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, 
         sma =  np.mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
     
     for i in range(0,len(temp_list), period):
-        lasts = temp_list[i:i+10][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
+        lasts = temp_list[i:i+period][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
         # print('lasts: ',lasts[:][1])
         ma =  np.mean(lasts[:][1])  # 4: CLOSE , 1: OPEN Columns
         movings_avg.append(ma)
@@ -411,8 +411,8 @@ class SUPPORT_RESISTANCE:
 
 
 def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
-    
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
+    bar_period -=1
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period-0)
 
     temp_list =  []
     
@@ -420,7 +420,7 @@ def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9
     teken_sen = convs_line= []
     senko_A = span_A = []
     senko_B = span_B = []
-
+    
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
@@ -429,64 +429,59 @@ def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9
     temp_list = np.array(temp_list)
     #OHLC
     n = None
-    high_period_9 = [max( temp_list[i:i+conversion, 2] ) for i in range(0, len(temp_list),conversion) ]
-    low_period_9 = [min( temp_list[i:i+conversion, 3])  for i in range(0, len(temp_list),conversion) ]
-    for _ in range(len(high_period_9)):
-        high_period_9.insert(0, n)
-
-    for _ in range(len(low_period_9)):
-        low_period_9.insert(0, n)
-         
-    high_period_26 = [max( temp_list[i:i+base , 2] ) for i in range(0, len(temp_list),base) ]
-    low_period_26 = [min( temp_list[i:i+base  , 3])  for i in range(0, len(temp_list),base) ]
-    
-    for _ in range(len(high_period_26)):
-        high_period_26.insert(0, n)
-    for _ in range(len(low_period_26)):
-        low_period_26.insert(0, n)
-
-    high_period_52 = [max( temp_list[i:i+b , 2] ) for i in range(0, len(temp_list),b) ]
-    low_period_52 = [min( temp_list[i:i+b  , 3])  for i in range(0, len(temp_list),b) ]
-
-    for _ in range(len(high_period_52)):
-        high_period_52.insert(0, n)
-    for _ in range(len(low_period_52)):
-        low_period_52.insert(0, n)
-
-    for i,j in list(zip(high_period_9, low_period_9)):
+    for i in range(len(temp_list)):
         try:
+            period_9  =  ( ( max( temp_list[i - conversion :i + 1 , 2] ) + min( temp_list[i - conversion :i + 1 , 3]) )/2) 
+            period_26 =  ( ( max( temp_list[i - base       :i + 1 , 2] ) + min( temp_list[i - base       :i + 1 , 3]) )/2)
+            period_52 =  ( ( max(  temp_list[i - b         :i + 1 , 2] ) + min( temp_list[i - b          :i + 1 , 3]) )/2)
+            
+            convs_line.append(period_9)
+            base_line.append(period_26)
+            span_B.append(period_52)
 
-            convs_line.append(((i+j)/2))
-        except TypeError:
+        except:
             pass
 
-    for i,j in list(zip(high_period_26, low_period_26)):
-        try:
-
-            base_line.append(((i+j)/2))
-        except TypeError:
-            pass
+            
 
     for i,j in list(zip(convs_line, base_line)):
         try:
 
             span_A.append(((i+j)/2))
-        except TypeError:
+        except :
             pass
 
-    for i,j in list(zip(high_period_52, low_period_52)):
-        try:
-
-            span_B.append(((i+j)/2))
-        except TypeError:
-            pass
 
     
+    for _ in range(b):
+        convs_line.insert(0, convs_line[0])
+        base_line.insert(0, base_line[0])
+        span_A.append(span_A[-1])
+        span_B.append(span_B[-1])
 
+    for _ in range(b+base ):
+        span_A.insert ( 0,span_A[0] )
+        span_B.insert ( 0, span_B[0] )
 
     return convs_line, base_line, span_A, span_B
 
-    
+
+def Donchian(symbol:str, time_frame: str, bar_period: int, length: int = 20):
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period-0)
+
+    temp_list =  []
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))
+
+    highs = [temp_list[i][ 2  ] for i in range(len(temp_list)) ]
+    lows = [temp_list[i][ 3  ] for i in range(len(temp_list)) ]
+    # print(highs)
+    # print(lows)
+    upper = [max(highs[i :i+length]) for i in range(0,len(highs) , length)]
+    lower = [min(lows[i :i+ length]) for i in range(0,len(lows) , length)]
+    return upper, lower
+
 
 def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
     "I'm responsiable to Open Deals"
