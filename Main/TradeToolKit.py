@@ -411,76 +411,84 @@ class SUPPORT_RESISTANCE:
 
 
 def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
-    bar_period -=1
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period-0)
 
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period)
     temp_list =  []
-    
-    kijin_sen = base_line = []
-    teken_sen = convs_line= []
-    senko_A = span_A = []
-    senko_B = span_B = []
-    
+    kijin_sen = base_line = [None for _ in range(b)]
+    teken_sen = convs_line= [None for _ in range(b)]
+    senko_A = span_A =      [None for _ in range(b)]
+    senko_B = span_B =      [None for _ in range(b)]
+    Date = [None for _ in range(b)]
+
+
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
 
-    
     temp_list = np.array(temp_list)
     #OHLC
-    n = None
     for i in range(len(temp_list)):
         try:
             period_9  =  ( ( max( temp_list[i - conversion :i + 1 , 2] ) + min( temp_list[i - conversion :i + 1 , 3]) )/2) 
             period_26 =  ( ( max( temp_list[i - base       :i + 1 , 2] ) + min( temp_list[i - base       :i + 1 , 3]) )/2)
             period_52 =  ( ( max(  temp_list[i - b         :i + 1 , 2] ) + min( temp_list[i - b          :i + 1 , 3]) )/2)
-            
+            date = temp_list[i - conversion :i + 1 , 0][-1]
             convs_line.append(period_9)
             base_line.append(period_26)
             span_B.append(period_52)
+            Date.append(date)
 
         except:
             pass
 
-            
-
     for i,j in list(zip(convs_line, base_line)):
         try:
-
             span_A.append(((i+j)/2))
         except :
             pass
 
 
-    
-    for _ in range(b):
-        convs_line.insert(0, convs_line[0])
-        base_line.insert(0, base_line[0])
-        span_A.append(span_A[-1])
-        span_B.append(span_B[-1])
-
-    for _ in range(b+base ):
-        span_A.insert ( 0,span_A[0] )
-        span_B.insert ( 0, span_B[0] )
-
-    return convs_line, base_line, span_A, span_B
+    return Date, convs_line, base_line, span_A, span_B
 
 
 def Donchian(symbol:str, time_frame: str, bar_period: int, length: int = 20):
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period-0)
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
 
     temp_list =  []
+    uppers = []
+    lowers = []
+    Date =[]
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
 
-    highs = [temp_list[i][ 2  ] for i in range(len(temp_list)) ]
-    lows = [temp_list[i][ 3  ] for i in range(len(temp_list)) ]
-    # print(highs)
-    # print(lows)
-    upper = [max(highs[i :i+length]) for i in range(0,len(highs) , length)]
-    lower = [min(lows[i :i+ length]) for i in range(0,len(lows) , length)]
-    return upper, lower
+    temp_list = np.array(temp_list)
+    # print(len(temp_list))
+    #OHLC
+
+    for i in range(len(temp_list)):
+        try:
+            upper = max( temp_list[i - length :i + 1 , 2] )  
+            lower = min( temp_list[i - length :i + 1 , 3] ) 
+            date = temp_list[i - length :i + 1 , 0][-1]
+
+            uppers.append(upper)
+            lowers.append(lower)
+            Date.append(date)
+        except:
+            pass
+
+
+
+    for _ in range(length):
+        uppers.insert(0, uppers[0])
+        lowers.insert(0, lowers[0])
+        Date.insert(0, Date[0])
+
+    base = [((i+j)/2) for i,j in list(zip(uppers, lowers))]
+
+ 
+    return Date, uppers, base, lowers
 
 
 def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
