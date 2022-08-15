@@ -7,7 +7,7 @@ I can help you find Supports and Resistance lines, Pivot Points, trend line.
 I'm still a Kid, if you You want to help to grow see me at 'https://github.com/amirhu37/mt5-a-trade-comedy'
 
 """
-import pandas as pd
+
 import MetaTrader5 as mt5 
 import numpy as np
 from sklearn import linear_model as ln
@@ -16,7 +16,6 @@ from os import system
 from os.path import exists
 
 
-# print(__doc__)
 mt5.initialize()
 ordr_dict = {'buy': 0, 'sell': 1}
 
@@ -32,9 +31,9 @@ time_perid = {
 }
 
 
-def Symbol_data(sym: str, tf: int, ma: int, ohlc: str, Open_candle: bool = False, o: int = 1):
+def Symbol_data(sym: str, time_frame: str, ma: int, ohlc: str, Open_candle: bool = False, o: int = 1):
     if Open_candle == True : o = 0
-    bars = mt5.copy_rates_from_pos(sym, time_perid[tf], o, ma)
+    bars = mt5.copy_rates_from_pos(sym, time_perid[time_frame], o, ma)
     OHLC = {'t': 0 , 'o': 1 , 'h': 2, 'l': 3, 'c': 4}
     temp_list = [i for i in bars] 
     
@@ -82,7 +81,7 @@ def Symbol_info(s: str, rr: int = 1):
     return syms[s]
 
 
-def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, method: str ) -> list:
+def moving_average(symbol: str, time_frame: str, bar_period: int , period: int = 10, method: str='close' ) -> list:
     """
     I can help you to Find Simple Moving Average, base on this methods:
     ----
@@ -93,7 +92,7 @@ def moving_average(symbol: str, TIME_FRAME: int, bar_period: int , period: int, 
     time_Frame: 1,5,15,30,60
     """
     method_dict = {"open": 1, 'high': 2, "low":3, "close": 4 }
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[TIME_FRAME], 1, bar_period)
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
     temp_list = list()
     movings_avg = list()
 
@@ -141,16 +140,15 @@ def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, 
     return journal
 
 
-
 class Trend:
-    def __init__(self,  symbol: str, tf: int, ma: int = 30) -> None:
+    def __init__(self,  symbol: str, time_frame: str, ma: int = 30) -> None:
         self.symbol = symbol
-        self.tf = tf
+        self.time_frame = time_frame
         self.ma = ma
     def trend_fit(self,) -> float:
         "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
 
-        bars = mt5.copy_rates_from_pos(self.symbol, time_perid[self.tf], 1, self.ma)
+        bars = mt5.copy_rates_from_pos(self.symbol, time_perid[self.time_frame], 1, self.ma)
         temp_list = [i for i in bars]
         highs = [temp_list[i][2] for i in range(len(temp_list))]
         lows = [temp_list[i][3] for i in range(len(temp_list))]
@@ -198,10 +196,14 @@ class Trend:
 
 
 class PIVOT:
-    "Pivot Points can be Important,\nbut a little bit of advice; use it for higher Time Frames\nUse this methos for support/Resistance of Pivot Points; 'resistaces_PP' ,  'supports_PP' ,'result'"
+    """
+    Pivot Points can be Important.
+    but a little bit of advice; use it for higher Time Frames
+    Use this methos for support/Resistance of Pivot Points; 'resistaces_PP' ,  'supports_PP' ,'result'
+    """
 
-    def __init__(self, SYM: str, TF: int = 240, peride: int = 2) -> None:
-        self.candles = mt5.copy_rates_from_pos(SYM, time_perid[TF], 1, peride)
+    def __init__(self, SYM: str, time_frame: str = '1h', bar_period: int = 2) -> None:
+        self.candles = mt5.copy_rates_from_pos(SYM, time_perid[time_frame], 1, bar_period)
         # self.open_1: float = self.candles   [1][1] # OPEN
         self.High_1: float = self.candles[1][2]  # HIGH
         self.low_1: float = self.candles[1][3]  # LOW
@@ -241,7 +243,7 @@ class Patterns:
     "I help you to find Some candle Patterns,\nSuch as 'engulfing', 'doji', 'threes' (soldiers/Raves)"
     # OHLC
 
-    def __init__(self, symbol, time_frame, period) -> None:
+    def __init__(self, symbol: str, time_frame: str, bar_period: int = 100) -> None:
         # OHLC
         self.symbol = symbol
         self.timeframe = time_frame
@@ -252,7 +254,7 @@ class Patterns:
         self.candles_3 = mt5.copy_rates_from_pos(
             symbol, time_perid[time_frame], 1, 5)
         self.bars = mt5.copy_rates_from_pos(
-            symbol, time_perid[time_frame], 1, period)
+            symbol, time_perid[time_frame], 1, bar_period)
 
     def engulfing(self) -> tuple:
         "I'll help you to find 'engulfing' pattern. Ascendig & Descendig"
@@ -355,13 +357,16 @@ class Patterns:
 
 
 class SUPPORT_RESISTANCE:
-    "I'm goint to find some Supports/Resistenc for you.\nUse 'result' Methods for Exact Numbers"
+    """
+    I'm goint to find some Supports/Resistenc for you.
+    Use 'result' Methods for Exact Numbers
+    """
 
-    def __init__(self, symbol: str, timeframe, period, n1: int, n2: int, l: int = 60) -> None:
+    def __init__(self, symbol: str, time_frame, bar_period: int = 100, n1: int = 3, n2: int = 2, l: int = 60) -> None:
         self.n1 = n1
         self.n2 = n2
         self.l = l
-        self.bars = mt5.copy_rates_from_pos(symbol, timeframe, 0, period)
+        self.bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
         temp_list = list()
 
         for i in self.bars:
@@ -414,28 +419,32 @@ def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9
 
     bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period)
     temp_list =  []
-    kijin_sen = base_line = [None for _ in range(b)]
-    teken_sen = convs_line= [None for _ in range(b)]
-    senko_A = span_A =      [None for _ in range(b)]
-    senko_B = span_B =      [None for _ in range(b)]
-    Date = [None for _ in range(b)]
-
-
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
 
     temp_list = np.array(temp_list)
     #OHLC
+    teken_sen = convs_line= [None for _ in range(conversion)]
+    kijin_sen = base_line = [None for _ in range(base)]
+    senko_A = span_A =      [None for _ in range(base)]
+    senko_B = span_B =      [None for _ in range(b)]
+    Date =                  [None for _ in range(b)]
+
+
+
     for i in range(len(temp_list)):
         try:
-            period_9  =  ( ( max( temp_list[i - conversion :i + 1 , 2] ) + min( temp_list[i - conversion :i + 1 , 3]) )/2) 
-            period_26 =  ( ( max( temp_list[i - base       :i + 1 , 2] ) + min( temp_list[i - base       :i + 1 , 3]) )/2)
-            period_52 =  ( ( max(  temp_list[i - b         :i + 1 , 2] ) + min( temp_list[i - b          :i + 1 , 3]) )/2)
-            date = temp_list[i - conversion :i + 1 , 0][-1]
+            period_9  =  ( ( max( temp_list  [i - conversion : i+1 , 2] ) + min( temp_list[i - conversion: i +1 , 3]) )/2)
             convs_line.append(period_9)
-            base_line.append(period_26)
+            
+            period_26 =  ( ( max( temp_list  [i - base       : i+1 , 2] ) + min( temp_list[i - base      : i +1 , 3]) )/2)
+            base_line.append(period_26)           
+            
+            period_52 =  ( ( max(  temp_list [i - b          : i+1 , 2] ) + min( temp_list[i - b         : i +1 , 3]) )/2)
             span_B.append(period_52)
+
+            date = temp_list[i - conversion :i + 1 , 0][-1]
             Date.append(date)
 
         except:
