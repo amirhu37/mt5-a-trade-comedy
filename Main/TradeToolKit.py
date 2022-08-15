@@ -500,41 +500,47 @@ def Donchian(symbol:str, time_frame: str, bar_period: int, length: int = 20):
     return Date, uppers, base, lowers
 
 
-def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,SPREAD: float, POINT: int, RATIO: int) -> dict:
-    "I'm responsiable to Open Deals"
+def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, sl: float =0.0 , tp: float = 0.0) -> dict:
+    """
+    I'm responsiable to Open Deals
+    -------
+    if sl or tp is equal to 0.0 new tp and sl will generate automaticly
+    """
     tick = mt5.symbol_info_tick(symbol)
 
-    #  = spread, point, rr_Ratio
+    SPREAD, POINT, RATIO = Symbol_info(symbol)
     print('spread:', SPREAD)
     order_dict = {'buy': 0, 'sell': 1}
     price_dict = {'buy': tick.ask, 'sell': tick.bid}
 
-    sl_rull = 0.0
-    tp_rull = 0.0
+    sl = 0.0
+    tp = 0.0
 
     # BUY
     if order_type == 'buy':
+        if sl == 0.0 :
+            sl = price_dict['buy'] - SPREAD - POINT
+        if tp == 0.0 :
+            tp = price_dict['buy'] + RATIO*POINT + SPREAD
 
-        sl_rull = price_dict['buy'] - SPREAD - POINT
-        tp_rull = price_dict['buy'] + RATIO*POINT + SPREAD
-
-        print('sl rul; ', sl_rull)
+        print('sl rul; ', sl)
         print('price: ', price_dict['buy'])
-        print('tp rul: ', tp_rull)
-        print('pr - tp ', f"{tp_rull - price_dict['buy'] : .2f}")
-        print('sl - tp ', f"{price_dict['buy'] - sl_rull : .2f}")
+        print('tp rul: ', tp)
+        print('pr - tp ', f"{tp - price_dict['buy'] : .2f}")
+        print('sl - tp ', f"{price_dict['buy'] - sl : .2f}")
     
     # SELL
     elif order_type == 'sell':  
+        if sl == 0.0:
+            sl = price_dict['sell'] + SPREAD + POINT
+        if tp == 0.0:
+            tp = price_dict['sell'] - RATIO*POINT - SPREAD
 
-        sl_rull = price_dict['sell'] + SPREAD + POINT
-        tp_rull = price_dict['sell'] - RATIO*POINT - SPREAD
-
-        print('sl rul; ', sl_rull)
+        print('sl rul; ', sl)
         print('price: ', f"{price_dict['sell']: .4f}")
-        print('tp rul: ', tp_rull)
-        print('pr - tp ', price_dict['sell'] - tp_rull)
-        print('sl - tp ', price_dict['sell'] - sl_rull)
+        print('tp rul: ', tp)
+        print('pr - tp ', price_dict['sell'] - tp)
+        print('sl - tp ', price_dict['sell'] - sl)
         
     request = {
         "action": mt5.TRADE_ACTION_DEAL,
@@ -542,8 +548,8 @@ def market_order(*,symbol: str, volume: float, order_type: str, deviation: int,S
         "volume": volume,
         "type": order_dict[order_type],
         "price": price_dict[order_type],
-        "sl": sl_rull,
-        "tp": tp_rull,
+        "sl": sl,
+        "tp": tp,
         "deviation": deviation,
         "magic": 100,
         "comment": f"{str(datetime.now())[:19]}",
