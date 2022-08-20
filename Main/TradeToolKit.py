@@ -44,6 +44,7 @@ def Symbol_data(sym: str, time_frame: str, ma: int, ohlc: str, Open_candle: bool
         data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
     return data
 
+
 def Symbol_info(s: str, rr: int = 1):
     """SYMBOLs can Have difrent pips and spreads.
     maybe I can help you with that.\nBTW rr is Risk/Reward Ratio"""
@@ -103,12 +104,14 @@ def moving_average(symbol: str, time_frame: str, bar_period: int , period: int =
         bars = np.array(temp_list)
         sma =  np.mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
     
-    for i in range(0,len(temp_list), period):
-        lasts = temp_list[i:i+period][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
-        # print('lasts: ',lasts[:][1])
-        ma =  np.mean(lasts[:][1])  # 4: CLOSE , 1: OPEN Columns
-        movings_avg.append(ma)
-    
+    for i in range(len(temp_list)):
+        try:
+            lasts = temp_list[i-period: i+1][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
+            # print('lasts: ',lasts[:][1])
+            ma =  np.mean(lasts[:][1])  # 4: CLOSE , 1: OPEN Columns
+            movings_avg.append(ma)
+        except:
+            pass    
     return movings_avg
 
 
@@ -562,9 +565,13 @@ def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, 
     return order_result, request_result
 
 
-# function to close an order base don ticket id
+
 def close_order(*,ticket, deviation: int) -> dict:
-    "I'm responsiable to Close Deals"
+    """
+    I'm responsiable to Close Deals
+    --
+    function to close an order base don ticket id
+    """
     positions = mt5.positions_get()
 
     for pos in positions:
