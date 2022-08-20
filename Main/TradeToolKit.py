@@ -31,17 +31,26 @@ time_perid = {
 }
 
 
-def Symbol_data(sym: str, time_frame: str, ma: int, ohlc: str, Open_candle: bool = False, o: int = 1):
+def Symbol_data(sym: str, time_frame: str, bar_range: int, method: str , Open_candle: bool = False):
+    """
+    excract SYMBOL datas such as:
+    ----
+    method: 't' or 'time' , 'o' or'open' , 'h' or 'high', 'l' or 'low', 'c' or 'close', 'v' or 'volume'
+
+    open_candle : means should include current open candle or not
+    """
+    o = 1
     if Open_candle == True : o = 0
-    bars = mt5.copy_rates_from_pos(sym, time_perid[time_frame], o, ma)
-    OHLC = {'t': 0 , 'o': 1 , 'h': 2, 'l': 3, 'c': 4}
+    bars = mt5.copy_rates_from_pos(sym, time_perid[time_frame], o, bar_range)
+    OHLC = {'t': 0 , 'o': 1 , 'h': 2, 'l': 3, 'c': 4, 'v':5,
+        'time': 0 , 'open': 1 , 'high': 2, 'low': 3, 'close': 4, 'volume':5}
     temp_list = [i for i in bars] 
     
-    if ohlc == 'all':
+    if method == 'all':
          
         data = [temp_list[i] for i in range(len(temp_list)) ]
-    elif ohlc in OHLC:
-        data = [temp_list[i][ OHLC[ohlc]  ] for i in range(len(temp_list)) ]
+    elif method in OHLC:
+        data = [temp_list[i][ OHLC[method]  ] for i in range(len(temp_list)) ]
     return data
 
 
@@ -82,37 +91,41 @@ def Symbol_info(s: str, rr: int = 1):
     return syms[s]
 
 
-def moving_average(symbol: str, time_frame: str, bar_period: int , period: int = 10, method: str='close' ) -> list:
+def moving_average(symbol: str, time_frame: str, bar_range: int , period: int = 10, method: str='close' ) -> list:
     """
     I can help you to Find Simple Moving Average, base on this methods:
     ----
     
-    method: 'Open' ,'high', 'low', 'close'
+    method: 'Open' ,'high', 'low', 'close', 'volume'
     ----
     
-    time_Frame: 1,5,15,30,60
+    time_Frame: 1m, 5m, 15m, 30m, 1h, 4h
     """
-    method_dict = {"open": 1, 'high': 2, "low":3, "close": 4 }
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
+    method_dict = {"open": 1, 'high': 2, "low":3, "close": 4, 'volume': 5 }
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_range)
     temp_list = list()
     movings_avg = list()
 
     for i in bars:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
-        last_close = bars[-1][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
+       
         bars = np.array(temp_list)
-        sma =  np.mean(bars[:, 1])  # 4: CLOSE , 1: OPEN Columns
-    
-    for i in range(len(temp_list)):
+      
+    for i in range(0,len(temp_list), period):
         try:
             lasts = temp_list[i-period: i+1][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
             # print('lasts: ',lasts[:][1])
-            ma =  np.mean(lasts[:][1])  # 4: CLOSE , 1: OPEN Columns
+            ma =  np.mean(lasts[:][method_dict[method]])  # 4: CLOSE , 1: OPEN Columns
             movings_avg.append(ma)
         except:
             pass    
     return movings_avg
+
+
+
+
+
 
 
 def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, price: float, sl: float, tp: float, comment: str, pattern: str) -> dict:
@@ -205,8 +218,8 @@ class PIVOT:
     Use this methos for support/Resistance of Pivot Points; 'resistaces_PP' ,  'supports_PP' ,'result'
     """
 
-    def __init__(self, SYM: str, time_frame: str = '1h', bar_period: int = 2) -> None:
-        self.candles = mt5.copy_rates_from_pos(SYM, time_perid[time_frame], 1, bar_period)
+    def __init__(self, SYM: str, time_frame: str = '1h', bar_range: int = 2) -> None:
+        self.candles = mt5.copy_rates_from_pos(SYM, time_perid[time_frame], 1, bar_range)
         # self.open_1: float = self.candles   [1][1] # OPEN
         self.High_1: float = self.candles[1][2]  # HIGH
         self.low_1: float = self.candles[1][3]  # LOW
@@ -246,7 +259,7 @@ class Patterns:
     "I help you to find Some candle Patterns,\nSuch as 'engulfing', 'doji', 'threes' (soldiers/Raves)"
     # OHLC
 
-    def __init__(self, symbol: str, time_frame: str, bar_period: int = 100) -> None:
+    def __init__(self, symbol: str, time_frame: str, bar_range: int = 100) -> None:
         # OHLC
         self.symbol = symbol
         self.timeframe = time_frame
@@ -257,7 +270,7 @@ class Patterns:
         self.candles_3 = mt5.copy_rates_from_pos(
             symbol, time_perid[time_frame], 1, 5)
         self.bars = mt5.copy_rates_from_pos(
-            symbol, time_perid[time_frame], 1, bar_period)
+            symbol, time_perid[time_frame], 1, bar_range)
 
     def engulfing(self) -> tuple:
         "I'll help you to find 'engulfing' pattern. Ascendig & Descendig"
@@ -365,11 +378,11 @@ class SUPPORT_RESISTANCE:
     Use 'result' Methods for Exact Numbers
     """
 
-    def __init__(self, symbol: str, time_frame, bar_period: int = 100, n1: int = 3, n2: int = 2, l: int = 60) -> None:
+    def __init__(self, symbol: str, time_frame, bar_range: int = 100, n1: int = 3, n2: int = 2, l: int = 60) -> None:
         self.n1 = n1
         self.n2 = n2
         self.l = l
-        self.bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
+        self.bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_range)
         temp_list = list()
 
         for i in self.bars:
@@ -418,9 +431,9 @@ class SUPPORT_RESISTANCE:
         return S, R
 
 
-def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
+def ichimoku(symbol: str, time_frame: int, bar_range : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
 
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_period)
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_range)
     temp_list =  []
     for i in bars:
         # Converting to tuple and then to array to fix an error.
@@ -463,8 +476,8 @@ def ichimoku(symbol: str, time_frame: int, bar_period : int ,conversion: int = 9
     return Date, convs_line, base_line, span_A, span_B
 
 
-def Donchian(symbol:str, time_frame: str, bar_period: int, length: int = 20):
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_period)
+def Donchian(symbol:str, time_frame: str, bar_range: int, length: int = 20):
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_range)
 
     temp_list =  []
     uppers = []
@@ -503,15 +516,18 @@ def Donchian(symbol:str, time_frame: str, bar_period: int, length: int = 20):
     return Date, uppers, base, lowers
 
 
-def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, sl: float =0.0 , tp: float = 0.0) -> dict:
+def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, sl: float =0.0 , tp: float = 0.0, RATIO: int = 1 ) -> dict:
     """
     I'm responsiable to Open Deals
     -------
     if sl or tp is equal to 0.0 new tp and sl will generate automaticly
+    when you put sl and tp on auto generate: REMEMBER to set RATIO : R/R ration
+
+    RATIO is base on 1 to ... for example: default is 1 to 1 
     """
     tick = mt5.symbol_info_tick(symbol)
 
-    SPREAD, POINT, RATIO = Symbol_info(symbol)
+    SPREAD, POINT, _ = Symbol_info(symbol)
     print('spread:', SPREAD)
     order_dict = {'buy': 0, 'sell': 1}
     price_dict = {'buy': tick.ask, 'sell': tick.bid}
