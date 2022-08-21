@@ -91,7 +91,7 @@ def Symbol_info(s: str, rr: int = 1):
     return syms[s]
 
 
-def moving_average(symbol: str, time_frame: str, bar_range: int , period: int = 10, method: str='close' ) -> list:
+def moving_average(symbol: str, time_frame: str, bar_range: int , period: int , method: str ) -> list:
     """
     I can help you to Find Simple Moving Average, base on this methods:
     ----
@@ -102,7 +102,9 @@ def moving_average(symbol: str, time_frame: str, bar_range: int , period: int = 
     time_Frame: 1m, 5m, 15m, 30m, 1h, 4h
     """
     method_dict = {"open": 1, 'high': 2, "low":3, "close": 4, 'volume': 5 }
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_range)
+
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0 , bar_range)
+    
     temp_list = list()
     movings_avg = list()
 
@@ -110,16 +112,22 @@ def moving_average(symbol: str, time_frame: str, bar_range: int , period: int = 
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
        
-        bars = np.array(temp_list)
+    bars = np.array(temp_list)
       
+    # print(len(bars))
     for i in range(0,len(temp_list), period):
         try:
-            lasts = temp_list[i-period: i+1][ method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
-            # print('lasts: ',lasts[:][1])
-            ma =  np.mean(lasts[:][method_dict[method]])  # 4: CLOSE , 1: OPEN Columns
-            movings_avg.append(ma)
+            lasts = bars[i   : i+period , method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
+
+            ma =  np.mean(lasts)  # 4: CLOSE , 1: OPEN Columns
+
+            movings_avg.append(round(ma,2))
+            
         except:
             pass    
+    
+    print(f"mving avg {period}: ", movings_avg)
+
     return movings_avg
 
 
