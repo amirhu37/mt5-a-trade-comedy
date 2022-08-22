@@ -126,14 +126,9 @@ def moving_average(symbol: str, time_frame: str, bar_range: int , period: int , 
         except:
             pass    
     
-    print(f"mving avg {period}: ", movings_avg)
+    # print(f"mving avg {period}: ", movings_avg)
 
     return movings_avg
-
-
-
-
-
 
 
 def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, price: float, sl: float, tp: float, comment: str, pattern: str) -> dict:
@@ -162,7 +157,6 @@ def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, 
                "pattern-type": pattern,
                }
     return journal
-
 
 class Trend:
     def __init__(self,  symbol: str, time_frame: str, ma: int = 30) -> None:
@@ -218,7 +212,6 @@ class Trend:
             r_line = [round(( i -  (self.low_1 -  self.low_2) ), 4) for i in t_line]
         return t_line, r_line
 
-
 class PIVOT:
     """
     Pivot Points can be Important.
@@ -261,7 +254,6 @@ class PIVOT:
         r1 = self.resis_PP()
 
         return s1, r1, round(self.PP, 2)
-
 
 class Patterns:
     "I help you to find Some candle Patterns,\nSuch as 'engulfing', 'doji', 'threes' (soldiers/Raves)"
@@ -385,7 +377,6 @@ class SUPPORT_RESISTANCE:
     I'm goint to find some Supports/Resistenc for you.
     Use 'result' Methods for Exact Numbers
     """
-
     def __init__(self, symbol: str, time_frame, bar_range: int = 100, n1: int = 3, n2: int = 2, l: int = 60) -> None:
         self.n1 = n1
         self.n2 = n2
@@ -440,7 +431,9 @@ class SUPPORT_RESISTANCE:
 
 
 def ichimoku(symbol: str, time_frame: int, bar_range : int ,conversion: int = 9 , base: int = 26 ,b : int = 52 ):
-
+    """
+    Nothing Yet...
+    """
     bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, bar_range)
     temp_list =  []
     for i in bars:
@@ -485,6 +478,9 @@ def ichimoku(symbol: str, time_frame: int, bar_range : int ,conversion: int = 9 
 
 
 def Donchian(symbol:str, time_frame: str, bar_range: int, length: int = 20):
+    """
+    Nothing Yet...
+    """
     bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 1, bar_range)
 
     temp_list =  []
@@ -528,9 +524,12 @@ def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, 
     """
     I'm responsiable to Open Deals
     -------
-    if sl or tp is equal to 0.0 new tp and sl will generate automaticly
-    when you put sl and tp on auto generate: REMEMBER to set RATIO : R/R ration
-
+    if 'sl' or 'tp' is equal to -1.0, automated 'tp' and 'sl' will generate base on your 'RATIO' value.
+    
+    default value is '0.0' which means NO 'sl' or 'tp' is set.
+    
+    when you put sl and tp on auto generate: REMEMBER to set RATIO : R/R ration.
+    
     RATIO is base on 1 to ... for example: default is 1 to 1 
     """
     tick = mt5.symbol_info_tick(symbol)
@@ -540,14 +539,14 @@ def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, 
     order_dict = {'buy': 0, 'sell': 1}
     price_dict = {'buy': tick.ask, 'sell': tick.bid}
 
-    sl = 0.0
-    tp = 0.0
 
     # BUY
     if order_type == 'buy':
-        if sl == 0.0 :
+
+        
+        if sl == -1.0:
             sl = price_dict['buy'] - SPREAD - POINT
-        if tp == 0.0 :
+        if tp == -1.0:
             tp = price_dict['buy'] + RATIO*POINT + SPREAD
 
         print('sl rul; ', sl)
@@ -558,10 +557,12 @@ def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, 
     
     # SELL
     elif order_type == 'sell':  
-        if sl == 0.0:
+        if sl == -1.0:
             sl = price_dict['sell'] + SPREAD + POINT
-        if tp == 0.0:
+        if tp == -1.0:
             tp = price_dict['sell'] - RATIO*POINT - SPREAD
+
+
 
         print('sl rul; ', sl)
         print('price: ', f"{price_dict['sell']: .4f}")
