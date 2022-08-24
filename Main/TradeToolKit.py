@@ -91,46 +91,6 @@ def Symbol_info(s: str, rr: int = 1):
     return syms[s]
 
 
-def moving_average(symbol: str, time_frame: str, bar_range: int , period: int , method: str ) -> list:
-    """
-    I can help you to Find Simple Moving Average, base on this methods:
-    ----
-    
-    method: 'Open' ,'high', 'low', 'close', 'volume'
-    ----
-    
-    time_Frame: 1m, 5m, 15m, 30m, 1h, 4h
-    """
-    method_dict = {"open": 1, 'high': 2, "low":3, "close": 4, 'volume': 5 }
-
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0 , bar_range)
-    
-    temp_list = list()
-    movings_avg = list()
-
-    for i in bars:
-        # Converting to tuple and then to array to fix an error.
-        temp_list.append(list(i))
-       
-    bars = np.array(temp_list)
-      
-    # print(len(bars))
-    for i in range(0,len(temp_list), period):
-        try:
-            lasts = bars[i   : i+period , method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
-
-            ma =  np.mean(lasts)  # 4: CLOSE , 1: OPEN Columns
-
-            movings_avg.append(round(ma,2))
-            
-        except:
-            pass    
-    
-    # print(f"mving avg {period}: ", movings_avg)
-
-    return movings_avg
-
-
 def journal(Symbol: str, vol: int, tf: int, ma: int, pos: str,  rr_Ration: int, price: float, sl: float, tp: float, comment: str, pattern: str) -> dict:
     """Journal your Trade Activity is a Big Deal,
     I'm a part of this High Duty"""
@@ -164,7 +124,10 @@ class Trend:
         self.time_frame = time_frame
         self.ma = ma
     def trend_fit(self,) -> float:
-        "Nothing is more Important than Trend Line.\nI used Linear Regression for Find it"
+        """
+        Nothing is more Important than Trend Line.
+        I used Linear Regression for Find it
+        """
 
         bars = mt5.copy_rates_from_pos(self.symbol, time_perid[self.time_frame], 1, self.ma)
         temp_list = [i for i in bars]
@@ -256,7 +219,10 @@ class PIVOT:
         return s1, r1, round(self.PP, 2)
 
 class Patterns:
-    "I help you to find Some candle Patterns,\nSuch as 'engulfing', 'doji', 'threes' (soldiers/Raves)"
+    """
+    I help you to find Some candle Patterns,
+    Such as 'engulfing', 'doji', 'threes' (soldiers/Raves)
+    """
     # OHLC
 
     def __init__(self, symbol: str, time_frame: str, bar_range: int = 100) -> None:
@@ -520,6 +486,84 @@ def Donchian(symbol:str, time_frame: str, bar_range: int, length: int = 20):
     return Date, uppers, base, lowers
 
 
+def moving_average(symbol: str, time_frame: str, period: int , method: str ) -> float:
+    """
+    I can help you to Find Simple Moving Average, base on this methods:
+    ----
+    
+    method: 'Open' ,'high', 'low', 'close', 'volume'
+    ----
+    
+    time_Frame: 1m, 5m, 15m, 30m, 1h, 4h
+    """
+    method_dict = {"open": 1, 'high': 2, "low":3, "close": 4, 'volume': 5 }
+
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame],  0 , period )
+    
+    temp_list = list()
+
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))
+    # Turn to np array : int's easier to work with
+    bars = np.array(temp_list)
+    # Calculate Moving Average
+    movings_avg = np.mean(np.roll(bars[ : , method_dict[method] ], period ))
+
+    return round(movings_avg,2)
+
+
+def Average_True_Range(symbol: str, time_frame: str , period: int ) -> float:
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame],  0 , period)
+    temp_list = list()
+
+    true_range = list()
+
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))
+       
+    bars = np.array(temp_list)
+    # OHLC
+    high_low = bars[:,2] - bars[:,3]
+    high_close = np.abs(bars[:,2] - bars[:,4])
+    low_close = np.abs(bars[:,3] - bars[:,4])
+
+    for i,j,t in list(zip(high_low, high_close, low_close )):
+        true_range.append( np.max((i,j,t)) )
+
+    # CalCulate AVERAGE
+    atr = np.mean(np.roll(true_range[:], period ))
+    return round(atr,2)
+
+
+def relative_strength_index(symbol: str, time_frame: str , period: int, method: str ) -> float:
+    OHLC = { 'open': 1 , 'high': 2, 'low': 3, 'close': 4, 'volume':5}
+    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame], 0, period)
+    
+    temp_list = list()
+
+    for i in bars:
+        # Converting to tuple and then to array to fix an error.
+        temp_list.append(list(i))  
+    bars = np.array(temp_list)
+
+    # OHLC
+    close_delta = np.diff(bars[ : , OHLC[method] ],1)
+
+    gain   =        np.clip(close_delta, a_min = 0.0,    a_max = None)
+    loss =  np.abs( np.clip(close_delta, a_min = None, a_max = 0.0)  )
+
+    ma_gain = np.roll(gain, period).mean()
+    ma_loss = np.roll(loss, period ).mean()
+
+    rs = ma_gain / ma_loss
+    rsi = 100 - ( 100 / (1 + rs) )
+    
+    return round(rsi, 2)
+
+
+#`````````````````````````````` ORDER FUNCTION ``````````````````````````````````````````
 def market_order(*,symbol: str, volume: float, order_type: str, deviation: int, sl: float =0.0 , tp: float = 0.0, RATIO: int = 1 ) -> dict:
     """
     I'm responsiable to Open Deals
