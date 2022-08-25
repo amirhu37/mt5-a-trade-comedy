@@ -486,7 +486,8 @@ def Donchian(symbol:str, time_frame: str, bar_range: int, length: int = 20):
     return Date, uppers, base, lowers
 
 
-def moving_average(symbol: str, time_frame: str, period: int , method: str ) -> float:
+
+def moving_average(symbol: str, time_frame: str, bar_range: int , period: int , method: str ) -> list:
     """
     I can help you to Find Simple Moving Average, base on this methods:
     ----
@@ -498,19 +499,33 @@ def moving_average(symbol: str, time_frame: str, period: int , method: str ) -> 
     """
     method_dict = {"open": 1, 'high': 2, "low":3, "close": 4, 'volume': 5 }
 
-    bars = mt5.copy_rates_from_pos(symbol, time_perid[time_frame],  0 , period )
+    barss = mt5.copy_rates_from_pos(symbol, time_perid[time_frame],  0 , bar_range)
     
     temp_list = list()
+    movings_avg = list()
 
-    for i in bars:
+    for i in barss:
         # Converting to tuple and then to array to fix an error.
         temp_list.append(list(i))
-    # Turn to np array : int's easier to work with
+       
     bars = np.array(temp_list)
-    # Calculate Moving Average
-    movings_avg = np.mean(np.roll(bars[ : , method_dict[method] ], period ))
+      
+    # print(len(bars))
+    for i in range(0 , len(temp_list), period):
+        try:
+            # print(i, i+period)
+            lasts = bars[i     : i + period , method_dict[method] ]  # SMA base on 4: CLOSE , 1: OPEN
+            # print(len(lasts))
+            ma =  np.mean(lasts)  
 
-    return round(movings_avg,2)
+            movings_avg.append(round(ma,2))
+            
+        except:
+            pass    
+    
+    # print(f"mving avg {period}: ", movings_avg)
+
+    return movings_avg
 
 
 def Average_True_Range(symbol: str, time_frame: str , period: int ) -> float:
