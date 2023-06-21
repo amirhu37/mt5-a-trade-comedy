@@ -8,7 +8,7 @@ I'm still a Kid, if you You want to help to grow see me at 'https://github.com/a
 
 """
 
-from typing import List
+from typing import List, Literal
 import MetaTrader5 as mt5
 import numpy as np
 from sklearn import linear_model as ln
@@ -85,19 +85,13 @@ class MovingAverages:
         time_Frame: 1m, 5m, 15m, 30m, 1h, 4h
     """
 
-    def __init__(self, symbol: str, time_frame: str,  window_size: int, ohlc: str):
-        self.window = window_size
-        self.ohlc = ohlc
-        self.time_frame = time_frame
-        self.symbol = symbol
-        ohlc_dict = {"open": 1, 'high': 2, "low": 3, "close": 4, 'volume': 5}
-        self.bars = Symbol_data(
-            self.symbol, self.time_frame, self.window, self.ohlc)
-
+    def __init__(self,   data: int):
+        self.data = data
+        self.window = len(data)
     def Simple(self,):
-        data = self.bars
+        # data = self.bars
         weights = np.repeat(1.0, self.window) / self.window
-        return np.convolve(data, weights, 'valid')
+        return np.convolve(self.data, weights, 'valid')
 
     def Exponintial(self, alpha=0.5):
         data = self.bars
@@ -521,25 +515,55 @@ def bollinger_bands(symbol: str, time_frame: str, time_window: int, method: str)
             return rsi
 
 
-def moving_average(symbol: str, time_frame: str, time_window: int, method: str):
-    prices = Symbol_data(symbol,  time_frame, time_window, method)
-    n = time_window
-    return np.convolve(prices, np.ones((n,))/n, mode='valid')
+def _moving_average_split(symbol: str, time_frame: str, time_window: int,  OHLC: str, ma_method : Literal['ema', 'sma']):
+    prices = Symbol_data(symbol,  time_frame, time_window *2,  OHLC)
+    half = len(prices) // 2
+    prices_1 = prices[: half ]
+    prices_2 = prices[half:  ]
+
+    if ma_method == 'sma':
+        ma_1 = MovingAverages(prices_1).sma
+        ma_2 = MovingAverages(prices_2).sma
+        return ma_1, ma_2
+    elif ma_method == 'ema':
+        ma_1 = MovingAverages(prices_1).ema
+        ma_2 = MovingAverages(prices_2).ema
+        return ma_1, ma_2
+    else:
+        raise ('Invalid KeyWord')
+ 
 
 
 
-def macd(symbol: str, time_frame: str, fast: int, slow: int,  method: str):
-    slow_ma = moving_average(symbol, time_frame, slow, method)
-    fast_ma = moving_average(symbol, time_frame, fast, method)
+def cross(sym : str, time_frame : str, fast_ma_len: int, slow_ma_len : int , ma_method : Literal['ema', 'sma'] , OHLC : Literal['o', 'h', 'l', 'c'], cross_type : Literal['over', "under" ]):
+    fast_ma1, fast_ma2 = _moving_average_split(sym, time_frame , fast_ma_len,OHLC, ma_method)
+    slow_ma1, slow_ma2 = _moving_average_split(sym, time_frame , slow_ma_len,OHLC, ma_method)
+    if cross_type == "over":
+        if fast_ma1 <= slow_ma1 and fast_ma2 > slow_ma2:
+            return 1
+        else:
+            return 0
+    if cross_type == "under":
+        if fast_ma1 >= slow_ma1 and fast_ma2 < slow_ma2:
+            return 1
+        else:
+            return 0
+    else: 
+        raise ("invalid keywrod")
 
-    return fast_ma - slow_ma
 
 
+def macd(symbol: str, time_frame: str, fast: int, slow: int, ma_method : Literal['ema', 'sma'], ohlc: str):
+    if ma_method == 'sma':
+        slow_ma = MovingAverages(symbol, time_frame, slow, ohlc).sma
+        fast_ma = MovingAverages(symbol, time_frame, fast, ohlc).ema
+        return fast_ma - slow_ma
+    if ma_method == 'ema':
+        slow_ma = MovingAverages(symbol, time_frame, slow, ohlc).ema
+        fast_ma = MovingAverages(symbol, time_frame, fast, ohlc).ema
+        return fast_ma - slow_ma
 
-def exponential_moving_average(symbol: str, time_frame: str, time_window: int, method: str):
-    prices = Symbol_data(symbol,  time_frame, time_window, method)
-    n = time_window
-    return np.convolve(prices, np.ones((n,))/np.power(n, 2), mode='valid')
+
 
 
 def moving_standard_deviation(symbol: str, time_frame: str, time_window: int, method: str):
