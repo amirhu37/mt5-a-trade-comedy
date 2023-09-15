@@ -1,8 +1,0 @@
-setup.py
-mt5_tool_kit.egg-info/PKG-INFO
-mt5_tool_kit.egg-info/SOURCES.txt
-mt5_tool_kit.egg-info/dependency_links.txt
-mt5_tool_kit.egg-info/requires.txt
-mt5_tool_kit.egg-info/top_level.txt
-mt5tool/__init__.py
-mt5tool/mt5tool.py
