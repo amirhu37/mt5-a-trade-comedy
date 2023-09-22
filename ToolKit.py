@@ -3,6 +3,7 @@ from typing import List, Literal
 import MetaTrader5 as mt5
 import numpy as np
 import pandas as pd
+from enum import Enum
 
 ordr_dict = {'buy': 0,
              'sell': 1}
@@ -12,11 +13,19 @@ time_perid = {
     '5m':          mt5.TIMEFRAME_M5,
     '15m':         mt5.TIMEFRAME_M15,
     '30m':          mt5.TIMEFRAME_M30,
-    '16385m':      mt5.TIMEFRAME_H1,
+    "1min":          mt5.TIMEFRAME_M1,
+    '3min':          mt5.TIMEFRAME_M3,
+    '5min':          mt5.TIMEFRAME_M5,
+    '15min':         mt5.TIMEFRAME_M15,
+    '30min':          mt5.TIMEFRAME_M30,
+    '16385min':      mt5.TIMEFRAME_H1,
+    '16385min':      mt5.TIMEFRAME_H1,
     '1h':          mt5.TIMEFRAME_H1,
     '4h':         mt5.TIMEFRAME_H4,
     '1d':        mt5.TIMEFRAME_D1,
-    '1w':       mt5.TIMEFRAME_W1, }
+    '1w':       mt5.TIMEFRAME_W1,
+      }
+
 
 
 
@@ -41,7 +50,7 @@ if not mt5.initialize() == True :
 
 
 
-def Symbol_data(sym: str, time_frame: Literal["1m",'3m','5m','15m','30m','16385m','1h','4h','1d','1w'], 
+def Symbol_data(sym: str, time_frame: Literal['1m', '3m', '5m', '15m', '30m', '1min', '3min', '5min', '15min', '30min', '16385min', '1h', '4h', '1d', '1w'], 
                 bar_range: int, method: Literal['all','time', 'open', 'high', 'low', 'close','volume'], Open_candle: bool = False) -> pd.DataFrame | pd.Timestamp | pd.Series:
     """
     excract SYMBOL datas such as:
@@ -71,14 +80,14 @@ def Symbol_data(sym: str, time_frame: Literal["1m",'3m','5m','15m','30m','16385m
         data = pd.DataFrame([list(temp_list[i]) for i in range(len(temp_list))],
                             columns= ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', '0', '1'])
         # print(data)
-        data['Date'] = pd.to_datetime(data['Date'], unit = 's')
+        data['Date'] = pd.to_datetime(data['Date'], unit = 's' )
         data.drop(['0', '1'], axis = 1, inplace=True)
         return data
   
     elif method in OHLC:
         data = np.array([temp_list[i][OHLC[method]] for i in range(len(temp_list))])
         if OHLC in ['t', 'time']:
-            return pd.Series(pd.to_datetime(data, unit = 's'))
+            return pd.Series(pd.to_datetime(data, unit = 's' ))
         else :
             return pd.Series(data)
         
@@ -121,6 +130,64 @@ def _Average_True_Range(symbol: str, time_frame: str, period: int, Open_candle: 
     return round(atr, 2)
 
 
+class SUPPORT_RESISTANCE:
+    """
+    I'm goint to find some Supports/Resistenc for you.
+    Use 'result' Methods for Exact Numbers
+    """
+
+    def __init__(self, symbol: str, time_frame, bar_range: int = 100, n1: int = 3, n2: int = 2, l: int = 60) -> None:
+        self.n1 = n1
+        self.n2 = n2
+        self.l = l
+        self.bars = mt5.copy_rates_from_pos(
+            symbol, time_perid[time_frame], 1, bar_range)
+        temp_list = list()
+
+        for i in self.bars:
+            # Converting to tuple and then to array to fix an error.
+            temp_list.append(list(i))
+        self.bars = np.array(temp_list)
+
+    def _support(self, l: int) -> int:
+        "I'm giving you Supports lines, BUt for Find Real Lines use 'reslut' method"
+        self.l = l
+        # n1 n2 before and after candle l
+        for i in range((self.l - self.n1 + 1), self.l + 1):
+            if (self.bars[:, 3][i] > self.bars[:, 3][i-1]):
+                # Compare 2 Lows  to eachother
+
+                return 0
+        for i in range(self.l + 1, self.l + self.n2+1):
+            # Compare 2 Lows  to eachother:
+            if (self.bars[:, 3][i] < self.bars[:, 3][i-1]):
+                return 0
+        return 1
+    # OHLC
+
+    def _resistance(self, l: int) -> int:
+        "It's time to find Resistance lines, BUt for Find Real Lines use 'reslut' method"
+        self.l = l
+        # n1 n2 before and after candle l
+        for i in range(self.l - self.n1 + 1, self.l + 1):
+            if (self.bars[:, 2][i] < self.bars[:, 2][i-1]):
+                return 0
+        for i in range(self.l + 1, self.l + self.n2 + 1):
+            if (self.bars[:, 2][i] > self.bars[:, 2][i-1]):
+                return 0
+        return 1
+
+    def result(self):
+        "I'm here to show you S/R Lins Values"
+        S: list[float] = []
+        R: list[float] = []
+        for row in range(3, (len(self.bars) - self.n2)):
+            if self._support(row):
+                S.append(self.bars[:, 3][row])
+
+            if self._resistance(row):
+                R.append(self.bars[:, 2][row])
+        return S, R
 
 def _amount_sl(sym,  type, percent_equity = 1):
     pe = percent_equity / 100
